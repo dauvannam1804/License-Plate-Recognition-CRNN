@@ -10,24 +10,11 @@ import numpy as np
 from dataset import CRNNDataset
 from model import CRNN
 from utils import decode_greedy, calculate_metrics, pad_collate
-
-# Configuration
-DATASET_ROOT = '../dataset_final'
-IMG_HEIGHT = 32
-IMG_WIDTH = 128
-BATCH_SIZE = 32
-LEARNING_RATE = 0.001
-EPOCHS = 20
-DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-CHECKPOINT_DIR = '../checkpoints'
-LOG_FILE = '../train.log'
-
-if not os.path.exists(CHECKPOINT_DIR):
-    os.makedirs(CHECKPOINT_DIR)
+import config as cfg
 
 def log_print(msg):
     print(msg)
-    with open(LOG_FILE, 'a') as f:
+    with open(cfg.LOG_FILE, 'a') as f:
         f.write(msg + '\n')
     
 def train(model, train_loader, criterion, optimizer, device, epoch):
@@ -101,33 +88,30 @@ def validate(model, val_loader, criterion, device, epoch):
 def main():
     # 1. Datasets
     # Load train first to determine vocab
-    train_dataset = CRNNDataset(DATASET_ROOT, split='train', img_height=IMG_HEIGHT, img_width=IMG_WIDTH)
+    train_dataset = CRNNDataset(cfg.DATASET_ROOT, split='train', img_height=cfg.IMG_HEIGHT, img_width=cfg.IMG_WIDTH)
     # Pass char mapping to validation
-    val_dataset = CRNNDataset(DATASET_ROOT, split='val', img_height=IMG_HEIGHT, img_width=IMG_WIDTH, char_map=train_dataset.char2int)
+    val_dataset = CRNNDataset(cfg.DATASET_ROOT, split='val', img_height=cfg.IMG_HEIGHT, img_width=cfg.IMG_WIDTH, char_map=train_dataset.char2int)
     
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=pad_collate, num_workers=4)
-    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=pad_collate, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=cfg.BATCH_SIZE, shuffle=True, collate_fn=pad_collate, num_workers=4)
+    val_loader = DataLoader(val_dataset, batch_size=cfg.BATCH_SIZE, shuffle=False, collate_fn=pad_collate, num_workers=4)
     
     # 2. Model
-    model = CRNN(vocab_size=train_dataset.vocab_size, hidden_size=256).to(DEVICE)
+    model = CRNN(vocab_size=train_dataset.vocab_size, hidden_size=cfg.HIDDEN_SIZE).to(cfg.DEVICE)
     
     # 3. Optimization
     criterion = nn.CTCLoss(blank=0, zero_infinity=True) 
-    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    optimizer = optim.Adam(model.parameters(), lr=cfg.LEARNING_RATE)
     
     best_loss = float('inf')
     
-    for epoch in range(1, EPOCHS + 1):
-        train(model, train_loader, criterion, optimizer, DEVICE, epoch)
-        val_loss, _, _ = validate(model, val_loader, criterion, DEVICE, epoch)
+    for epoch in range(1, cfg.EPOCHS + 1):
+        train(model, train_loader, criterion, optimizer, cfg.DEVICE, epoch)
+        val_loss, _, _ = validate(model, val_loader, criterion, cfg.DEVICE, epoch)
         
-        # Save best model based on LOSS (user request)
+        # Save best model based on LOSS
         if val_loss < best_loss:
             best_loss = val_loss
-            # Create checkpoint dict to save vocab as well if needed in future, 
-            # but for now simple state_dict as requested.
-            # Storing vocab in a separate file is better practice but we keep it simple here.
-            torch.save(model.state_dict(), os.path.join(CHECKPOINT_DIR, 'best_model.pth'))
+            torch.save(model.state_dict(), os.path.join(cfg.CHECKPOINT_DIR, 'best_model.pth'))
             log_print(f"Saved best model (Loss: {best_loss:.4f}).")
             
     log_print("Training Complete.")

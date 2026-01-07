@@ -7,6 +7,7 @@ from torchvision import transforms
 from model import CRNN
 from dataset import CRNNDataset 
 from utils import decode_greedy
+import config as cfg
 
 def get_vocab(dataset_root):
     # Quick scan to build vocab
@@ -14,13 +15,13 @@ def get_vocab(dataset_root):
     return train_dataset.char2int, train_dataset.int2char, train_dataset.vocab_size
 
 def infer(image_path, model_path, dataset_root):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = cfg.DEVICE
     
     # 1. Setup Encoder & Model
     print("Building vocabulary from dataset...")
     char2int, int2char, vocab_size = get_vocab(dataset_root)
     
-    model = CRNN(vocab_size=vocab_size).to(device)
+    model = CRNN(vocab_size=vocab_size, hidden_size=cfg.HIDDEN_SIZE).to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
     
@@ -29,7 +30,7 @@ def infer(image_path, model_path, dataset_root):
     if img is None:
         return "Error: Could not read image."
         
-    img = cv2.resize(img, (128, 32)) # Match training
+    img = cv2.resize(img, (cfg.IMG_WIDTH, cfg.IMG_HEIGHT)) # Match training
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     
     transform = transforms.Compose([
@@ -50,8 +51,8 @@ def infer(image_path, model_path, dataset_root):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--image', type=str, required=True, help='Path to image')
-    parser.add_argument('--model', type=str, default='../checkpoints/best_model.pth', help='Path to model checkpoint')
-    parser.add_argument('--dataset', type=str, default='../dataset_final', help='Root of dataset to build vocab')
+    parser.add_argument('--model', type=str, default=os.path.join(cfg.CHECKPOINT_DIR, 'best_model.pth'), help='Path to model checkpoint')
+    parser.add_argument('--dataset', type=str, default=cfg.DATASET_ROOT, help='Root of dataset to build vocab')
     
     args = parser.parse_args()
     
