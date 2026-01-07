@@ -52,7 +52,7 @@ def train(model, train_loader, criterion, optimizer, device, epoch):
     avg_loss = total_loss / len(train_loader)
     char_acc, word_acc = calculate_metrics(predictions, targets)
     
-    log_print(f"Epoch {epoch} [Train] Loss: {avg_loss:.4f}, Char Acc: {char_acc:.4f}, Word Acc: {word_acc:.4f}")
+    # log_print(f"Epoch {epoch} [Train] Loss: {avg_loss:.4f}, Char Acc: {char_acc:.4f}, Word Acc: {word_acc:.4f}")
     return avg_loss, char_acc, word_acc
 
 def validate(model, val_loader, criterion, device, epoch):
@@ -82,7 +82,7 @@ def validate(model, val_loader, criterion, device, epoch):
     avg_loss = total_loss / len(val_loader)
     char_acc, word_acc = calculate_metrics(predictions, targets)
     
-    log_print(f"Epoch {epoch} [Val] Loss: {avg_loss:.4f}, Char Acc: {char_acc:.4f}, Word Acc: {word_acc:.4f}")
+    # log_print(f"Epoch {epoch} [Val] Loss: {avg_loss:.4f}, Char Acc: {char_acc:.4f}, Word Acc: {word_acc:.4f}")
     return avg_loss, char_acc, word_acc
 
 def main():
@@ -105,8 +105,11 @@ def main():
     best_loss = float('inf')
     
     for epoch in range(1, cfg.EPOCHS + 1):
-        train(model, train_loader, criterion, optimizer, cfg.DEVICE, epoch)
-        val_loss, _, _ = validate(model, val_loader, criterion, cfg.DEVICE, epoch)
+        train_loss, _, _ = train(model, train_loader, criterion, optimizer, cfg.DEVICE, epoch)
+        val_loss, char_acc, word_acc = validate(model, val_loader, criterion, cfg.DEVICE, epoch)
+        
+        # Log combined metrics for plotting
+        log_print(f"Epoch {epoch}: Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}, Char Acc: {char_acc:.4f}, Word Acc: {word_acc:.4f}")
         
         # Save best model based on LOSS
         if val_loss < best_loss:
