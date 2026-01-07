@@ -5,7 +5,7 @@ import torch
 # Paths
 DATASET_ROOT = '../dataset_final'
 CHECKPOINT_DIR = '../checkpoints'
-LOG_FILE = '../train.log'
+LOG_FILE = '../train.log.csv'
 
 # Data
 IMG_HEIGHT = 32
